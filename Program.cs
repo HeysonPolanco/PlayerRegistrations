@@ -1,10 +1,17 @@
 using PlayerRegistrations.Components;
+using Microsoft.EntityFrameworkCore;
+using PlayerRegistrations.DAL;
+using PlayerRegistrations.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+var ConStr = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContextFactory<Context>(o => o.UseSqlServer(ConStr));
 
 var app = builder.Build();
 
@@ -25,4 +32,5 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+builder.Services.AddScoped<PlayersService>();
 app.Run();

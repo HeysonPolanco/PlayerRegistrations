@@ -1,0 +1,91 @@
+﻿@page "/player-create"
+@inject PlayersService playersService
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Player Registration</PageTitle>
+
+<EditForm Model="player" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container">
+        <div class="card shadow-lg">
+            <div class="card-header text-center bg-primary text-white m-2">
+                <h3 class="card-title">Player Registration</h3>
+            </div>
+
+            <div class="card-body">
+                @*PlayerId*@
+                <div class="mb-3">
+                    <label class="form-label">PlayerId</label>
+                    <InputNumber class="form-control small-input" @bind-Value="player.PlayerId" readonly />
+                </div>
+
+                @*Name*@
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control wide-input" @bind-Value="player.Names" />
+                    <ValidationMessage For="@(() => player.Names)" />
+                </div>
+
+                @*Games Played*@
+                <div class="mb-3">
+                    <label class="form-label">Games Played</label>
+                    <InputNumber class="form-control wide-input" @bind-Value="player.Games" />
+                    <ValidationMessage For="@(() => player.Games)" />
+                </div>
+            </div>
+
+            @*Footer*@
+            <div class="card-footer text-center mt-2">
+                <button type="button" class="btn btn-outline-primary" @onclick="New">
+                    <span class="bi bi-plus"></span> New
+                </button>
+                <button type="submit" class="btn btn-outline-success">
+                    <span class="bi bi-check-circle-fill"></span> Save
+                </button>
+                <a href="/players" class="btn btn-outline-danger">
+                    <span class="bi bi-arrow-bar-left"></span> Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @*Notifications*@
+    <label class="text-success" hidden="@string.IsNullOrEmpty(Saved)">@Saved</label>
+    <label class="text-danger" hidden="@string.IsNullOrEmpty(Error)">@Error</label>
+</EditForm>
+
+@code {
+    public Players Player { get; set; } = new player;
+    private string Saved { get; set; } = string.Empty;
+    Public List<players> { get; set; } = new Players();
+
+    private void New()
+    {
+        player = new Players();
+        Error = string.Empty;
+        Saved = string.Empty;
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrEmpty(player.Name))
+        {
+            Error = "Name is required";
+            return;
+        }
+
+        var saved = await playersService.Save(player);
+        if (saved)
+        {
+            Saved = "Player successfully created";
+            navigationManager.NavigateTo("/players");
+        }
+        else
+        {
+            Error = "Error saving the player";
+        }
+    }
+}

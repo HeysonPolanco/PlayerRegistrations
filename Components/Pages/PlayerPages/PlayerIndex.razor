@@ -1,0 +1,56 @@
+﻿@page "/player-index"
+
+@inject PlayersService playersService
+@inject NavigationManager navigationManager
+
+<PageTitle>Player Registration</PageTitle>
+<div class="container">
+    <div class="card shadow-lg">
+        <div class="card Space-between">
+            <h5 class="card-title">Player Registration</h5>
+            <a href="/player-registration" class="btn btn-primary mt-3"> <span class="bi bi-plus-square"></span> Create</a>
+        </div>
+
+        <div class="card-body">
+
+            @*labels*@
+            <div class>="row">
+                @*inputs and buttons*@
+                <div class="row aling-itens-center">
+
+                    <table class="table table-hover"></table>
+                </div>
+                <div class="card-footer space-between">
+                    <label>Count: @playersList.Count()</label>
+                    <label>Total Games: @playersList.Sum(p => p.Games)</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+        @code {
+            public List<Players> players { get; set; } = new List<Players>();
+
+            public string Filter { get; set; } = string.Empty;
+            public string FilterValue { get; set; } = string.Empty;
+
+            protected override async Task OnInitializedAsync()
+            {
+                players = await playersService.GetList(Criteria p => p.PlayerID > 0); ;
+            }
+
+            private async Task Search()
+            {
+                if (!string.IsNullOrWhiteSpace(FilterValue))
+                {
+                    if (Filter == "Names")
+                    {
+                        players = await playersService.GetList(criteria: p => p.Names.ToLower().Contains(FilterValue.ToLower()));
+                    }
+                }
+                else
+                {
+                    players = await playersService.GetList();
+                }
+            }
+        }
