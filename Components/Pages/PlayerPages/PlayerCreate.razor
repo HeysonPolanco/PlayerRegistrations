@@ -19,21 +19,14 @@
                 @*PlayerId*@
                 <div class="mb-3">
                     <label class="form-label">PlayerId</label>
-                    <InputNumber class="form-control small-input" @bind-Value="player.PlayerId" readonly />
+                    <InputNumber class="form-control small-input" @bind-Value="player.PlayerId" disabled />
                 </div>
 
-                @*Name*@
+                @*Concept (Name)*@
                 <div class="mb-3">
                     <label class="form-label">Name</label>
-                    <InputText class="form-control wide-input" @bind-Value="player.Names" />
-                    <ValidationMessage For="@(() => player.Names)" />
-                </div>
-
-                @*Games Played*@
-                <div class="mb-3">
-                    <label class="form-label">Games Played</label>
-                    <InputNumber class="form-control wide-input" @bind-Value="player.Games" />
-                    <ValidationMessage For="@(() => player.Games)" />
+                    <InputText class="form-control wide-input" @bind-Value="player.Concept" />
+                    <ValidationMessage For="@(() => player.Concept)" />
                 </div>
             </div>
 
@@ -53,39 +46,39 @@
     </div>
 
     @*Notifications*@
-    <label class="text-success" hidden="@string.IsNullOrEmpty(Saved)">@Saved</label>
-    <label class="text-danger" hidden="@string.IsNullOrEmpty(Error)">@Error</label>
+    <label class="text-success" hidden="@string.IsNullOrEmpty(savedMessage)">@savedMessage</label>
+    <label class="text-danger" hidden="@string.IsNullOrEmpty(errorMessage)">@errorMessage</label>
 </EditForm>
 
 @code {
-    public Players Player { get; set; } = new player;
-    private string Saved { get; set; } = string.Empty;
-    Public List<players> { get; set; } = new Players();
+    private Players player { get; set; } = new Players();
+    private string savedMessage { get; set; } = string.Empty;
+    private string errorMessage { get; set; } = string.Empty;
 
     private void New()
     {
         player = new Players();
-        Error = string.Empty;
-        Saved = string.Empty;
+        errorMessage = string.Empty;
+        savedMessage = string.Empty;
     }
 
     private async Task Save()
     {
-        if (string.IsNullOrEmpty(player.Name))
+        if (string.IsNullOrWhiteSpace(player.Concept))
         {
-            Error = "Name is required";
+            errorMessage = "Name is required";
             return;
         }
 
         var saved = await playersService.Save(player);
         if (saved)
         {
-            Saved = "Player successfully created";
+            savedMessage = "Player successfully created";
             navigationManager.NavigateTo("/players");
         }
         else
         {
-            Error = "Error saving the player";
+            errorMessage = "Error saving the player";
         }
     }
 }

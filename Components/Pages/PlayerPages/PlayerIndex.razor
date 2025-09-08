@@ -6,51 +6,63 @@
 <PageTitle>Player Registration</PageTitle>
 <div class="container">
     <div class="card shadow-lg">
-        <div class="card Space-between">
+        <div class="card space-between">
             <h5 class="card-title">Player Registration</h5>
-            <a href="/player-registration" class="btn btn-primary mt-3"> <span class="bi bi-plus-square"></span> Create</a>
+            <a href="/player-create" class="btn btn-primary mt-3">
+                <span class="bi bi-plus-square"></span> Create
+            </a>
         </div>
 
         <div class="card-body">
-
-            @*labels*@
-            <div class>="row">
-                @*inputs and buttons*@
-                <div class="row aling-itens-center">
-
-                    <table class="table table-hover"></table>
+            <div class="row">
+                <div class="row align-items-center">
+                    <input class="form-control col" placeholder="Filter by Name" @bind="FilterValue" />
+                    <button class="btn btn-primary col-auto ms-2" @onclick="Search">Search</button>
                 </div>
+                <table class="table table-hover mt-3">
+                    <thead>
+                        <tr>
+                            <th>PlayerId</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var player in players)
+                        {
+                            <tr>
+                                <td>@player.PlayerId</td>
+                                <td>@player.Concept</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
                 <div class="card-footer space-between">
-                    <label>Count: @playersList.Count()</label>
-                    <label>Total Games: @playersList.Sum(p => p.Games)</label>
+                    <label>Count: @players.Count()</label>
                 </div>
             </div>
         </div>
     </div>
 </div>
-        @code {
-            public List<Players> players { get; set; } = new List<Players>();
 
-            public string Filter { get; set; } = string.Empty;
-            public string FilterValue { get; set; } = string.Empty;
+@code {
+    public List<Players> players { get; set; } = new List<Players>();
 
-            protected override async Task OnInitializedAsync()
-            {
-                players = await playersService.GetList(Criteria p => p.PlayerID > 0); ;
-            }
+    public string FilterValue { get; set; } = string.Empty;
 
-            private async Task Search()
-            {
-                if (!string.IsNullOrWhiteSpace(FilterValue))
-                {
-                    if (Filter == "Names")
-                    {
-                        players = await playersService.GetList(criteria: p => p.Names.ToLower().Contains(FilterValue.ToLower()));
-                    }
-                }
-                else
-                {
-                    players = await playersService.GetList();
-                }
-            }
+    protected override async Task OnInitializedAsync()
+    {
+        players = await playersService.GetList(p => p.PlayerId > 0);
+    }
+
+    private async Task Search()
+    {
+        if (!string.IsNullOrWhiteSpace(FilterValue))
+        {
+            players = await playersService.GetList(p => p.Concept.ToLower().Contains(FilterValue.ToLower()));
         }
+        else
+        {
+            players = await playersService.GetList();
+        }
+    }
+}

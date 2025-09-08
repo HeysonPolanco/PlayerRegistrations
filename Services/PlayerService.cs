@@ -7,6 +7,16 @@ namespace PlayerRegistrations.Services;
 
 public class PlayersService
 {
+    public async Task<List<Players>> GetList(Expression<Func<Players, bool>>? criteria = null)
+    {
+        await using var context = await _dbFactory.CreateDbContextAsync();
+
+        if (criteria != null)
+            return await context.Players.Where(criteria).ToListAsync();
+        else
+            return await context.Players.ToListAsync();
+    }
+
     private readonly IDbContextFactory<Context> _dbFactory;
 
     public PlayersService(IDbContextFactory<Context> dbFactory)
@@ -62,6 +72,7 @@ public class PlayersService
             .Where(p => p.PlayerId == playerId)
             .ExecuteDeleteAsync() > 0;
     }
+
 
     public async Task<List<Players>> List(Expression<Func<Players, bool>> criteria)
     {
