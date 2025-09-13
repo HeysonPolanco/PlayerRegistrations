@@ -41,7 +41,7 @@ public class MatchService
 
     private async Task<bool> Insert(Matches Match)
     {
-        if (await NameExists(Match.MatchId, Match.Matchstate))
+        if (await NameExists(Match.MatchId, Match.MatchState))
             throw new Exception("A Match with the same name already exists.");
 
         await using var context = await _dbFactory.CreateDbContextAsync();
@@ -51,7 +51,7 @@ public class MatchService
 
     private async Task<bool> Update(Matches Match)
     {
-        if (await NameExists(Match.MatchId, Match.Matchstate))
+        if (await NameExists(Match.MatchId, Match.MatchState))
             throw new Exception("A Match with the same name already exists.");
 
         await using var context = await _dbFactory.CreateDbContextAsync();
@@ -84,6 +84,6 @@ public class MatchService
     {
         await using var context = await _dbFactory.CreateDbContextAsync();
         return await context.Matches.AnyAsync(p =>
-            p.MatchId != MatchId && p.Matchstate.ToLower() == name.ToLower());
+            p.MatchId != MatchId && p.MatchState.ToLower() == name.ToLower());
     }
 }

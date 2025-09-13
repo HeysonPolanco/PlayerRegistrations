@@ -1,5 +1,84 @@
-﻿<h3>MatchCreate</h3>
+﻿@page "/Match-Create"
+@inject MatchService MatchService
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Matches</PageTitle>
+
+<EditForm Model="Match" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container">
+        <div class="card shadow-lg">
+            <div class="card-header text-center bg-primary text-white m-2">
+                <h3 class="card-title">Player Registration</h3>
+            </div>
+
+            <div class="card-body">
+                @*MatchId*@
+                <div class="mb-3">
+                    <label class="form-label">MatchIsd</label>
+                    <InputNumber class="form-control small-input" @bind-Value="Match.MatchId" disabled />
+                </div>
+
+                @*MatchState (Name)*@
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control wide-input" @bind-Value="Match.MatchState" />
+                    <ValidationMessage For="@(() => Match)" />
+                </div>
+            </div>
+
+            @*Footer*@
+            <div class="card-footer text-center mt-2">
+                <button type="button" class="btn btn-outline-primary" @onclick="New">
+                    <span class="bi bi-plus"></span> New
+                </button>
+                <button type="submit" class="btn btn-outline-success">
+                    <span class="bi bi-check-circle-fill"></span> Save
+                </button>
+                <a href="/players" class="btn btn-outline-danger">
+                    <span class="bi bi-arrow-bar-left"></span> Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @*Notifications*@
+    <label class="text-success" hidden="@string.IsNullOrEmpty(savedMessage)">@savedMessage</label>
+    <label class="text-danger" hidden="@string.IsNullOrEmpty(errorMessage)">@errorMessage</label>
+</EditForm>
 
 @code {
+    public Matches Match { get; set; } = new Matches();
+    private string savedMessage { get; set; } = string.Empty;
+    private string errorMessage { get; set; } = string.Empty;
 
+    private void New()
+    {
+        Match = new Matches();
+        errorMessage = string.Empty;
+        savedMessage = string.Empty;
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(Match.MatchState))
+        {
+            errorMessage = "Match is required";
+            return;
+        }
+
+        var saved = await MatchService.Save(Match);
+        if (saved)
+        {
+            savedMessage = "Match successfully created";
+            navigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Match error";
+        }
+    }
 }

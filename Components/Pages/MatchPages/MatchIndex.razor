@@ -9,7 +9,7 @@
     <div class="card shadow-lg">
         <div class="card space-between">
             <h5 class="card-title">Player Registration</h5>
-            <a href="/player-create" class="btn btn-primary mt-3">
+            <a href="/Match-create" class="btn btn-primary mt-3">
                 <span class="bi bi-plus-square"></span> Create
             </a>
         </div>
@@ -32,7 +32,7 @@
                         {
                             <tr>
                                 <td>@match.MatchId</td>
-                                <td>@match.Matchstate</td>
+                                <td>@match.MatchState</td>
                             </tr>
                         }
                     </tbody>
@@ -60,7 +60,7 @@
         if (!string.IsNullOrWhiteSpace(FilterValue))
         {
             Matches = await matchService.GetList(
-                p => p.Matchstate.ToLower().Contains(FilterValue.ToLower())
+                p => p.MatchState.ToLower().Contains(FilterValue.ToLower())
             );
         }
         else

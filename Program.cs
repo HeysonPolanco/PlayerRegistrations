@@ -17,7 +17,6 @@ builder.Services.AddScoped<MatchService>();
 
 var app = builder.Build();
 
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
