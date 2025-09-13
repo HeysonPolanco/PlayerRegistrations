@@ -1,8 +1,9 @@
-﻿@page "/Player-Index"
-@rendermode InteractiveServer
-@inject PlayersService playersService
+﻿@page "/"
+@inject MatchService matchService
 @inject NavigationManager navigationManager
+@rendermode InteractiveServer
 
+<h3>MatchIndex</h3>
 <PageTitle>Player Registration</PageTitle>
 <div class="container">
     <div class="card shadow-lg">
@@ -22,22 +23,22 @@
                 <table class="table table-hover mt-3">
                     <thead>
                         <tr>
-                            <th>PlayerId</th>
-                            <th>Name</th>
+                            <th>MatchId</th>
+                            <th>MatchState</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var player in players)
+                        @foreach (var match in Matches)
                         {
                             <tr>
-                                <td>@player.PlayerId</td>
-                                <td>@player.Concept</td>
+                                <td>@match.MatchId</td>
+                                <td>@match.Matchstate</td>
                             </tr>
                         }
                     </tbody>
                 </table>
                 <div class="card-footer space-between">
-                    <label>Count: @players.Count()</label>
+                    <label>Count: @Matches.Count()</label>
                 </div>
             </div>
         </div>
@@ -45,24 +46,26 @@
 </div>
 
 @code {
-    public List<Players> players { get; set; } = new List<Players>();
+    public List<Matches> Matches { get; set; } = new();
 
     public string FilterValue { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        players = await playersService.GetList(p => p.PlayerId > 0);
+        Matches = await matchService.GetList(p => p.MatchId > 0);
     }
 
     private async Task Search()
     {
         if (!string.IsNullOrWhiteSpace(FilterValue))
         {
-            players = await playersService.GetList(p => p.Concept.ToLower().Contains(FilterValue.ToLower()));
+            Matches = await matchService.GetList(
+                p => p.Matchstate.ToLower().Contains(FilterValue.ToLower())
+            );
         }
         else
         {
-            players = await playersService.GetList();
+            Matches = await matchService.GetList();
         }
     }
 }
