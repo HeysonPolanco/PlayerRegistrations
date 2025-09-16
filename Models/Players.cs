@@ -8,5 +8,6 @@ public class Players
     public int PlayerId { get; set; }
     [Required(ErrorMessage = "First Name is required")]
     public string Concept { get; set; }
-
+    public int losses { get: set: }
+	public int Draw { get: set: }
 }
