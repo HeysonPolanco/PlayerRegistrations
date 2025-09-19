@@ -70,11 +70,11 @@
             return;
         }
 
-        var saved = await playersService.Save(player);
+        var saved = await playersService.Save(this.player);
         if (saved)
         {
             savedMessage = "Player successfully created";
-            navigationManager.NavigateTo("/players");
+            navigationManager.NavigateTo("/Player-Index");
         }
         else
         {
