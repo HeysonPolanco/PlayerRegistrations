@@ -1,0 +1,118 @@
+﻿@page "/"
+@using PlayerRegistrations.Models
+@using PlayerRegistrations.Services
+
+@inject PlayersService playersService
+@inject MatchService matchService
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Player Selection - TicTacToe</PageTitle>
+
+<div class="container mx-auto max-w-lg p-6 bg-white rounded-lg shadow-xl text-center">
+    <h2>Select Players</h2>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Player X (required)</label>
+        <select class="form-select" @bind="PlayerXId">
+            <option value="">-- Select Player X --</option>
+            @foreach (var player in PlayersList)
+            {
+                <option value="@player.PlayerId" disabled="@(player.PlayerId == PlayerOId)">
+                    @player.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Player O</label>
+        <select class="form-select" @bind="PlayerOId" disabled="@(PlayerXId == null)">
+            <option value="">-- Select Player O --</option>
+            @foreach (var player in PlayersList)
+            {
+                <option value="@player.PlayerId" disabled="@(player.PlayerId == PlayerXId)">
+                    @player.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <button class="btn btn-success btn-lg mt-4"
+            disabled="@(PlayerXId == null || PlayerOId == PlayerXId)"
+            @onclick="StartMatch">
+        Start Match
+    </button>
+</div>
+
+@code {
+    private List<Players> PlayersList = new();
+    private string ErrorMessage = string.Empty;
+
+    private int? _playerXId;
+    private int? PlayerXId
+    {
+        get => _playerXId;
+        set
+        {
+            _playerXId = value;
+
+            // Reset Player O if it was the same as X
+            if (PlayerOId == _playerXId)
+                PlayerOId = null;
+
+            StateHasChanged();
+        }
+    }
+
+    private int? _playerOId;
+    private int? PlayerOId
+    {
+        get => _playerOId;
+        set
+        {
+            _playerOId = value;
+
+            // Reset Player X if it was the same as O
+            if (PlayerXId == _playerOId)
+                PlayerXId = null;
+
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        PlayersList = await playersService.GetList(p => p.PlayerId > 0);
+    }
+
+    private async Task StartMatch()
+    {
+        ErrorMessage = string.Empty;
+
+        if (PlayerXId == null)
+        {
+            ErrorMessage = "You must select Player X.";
+            return;
+        }
+
+        var match = new Matches
+            {
+                Player1Id = PlayerXId.Value,
+                Player2Id = PlayerOId,
+                MatchState = PlayerOId == null ? "Pending" : "In Progress",
+                PlayerTurnId = PlayerXId.Value,
+                BoardState = "---------",
+                CreatedAt = DateTime.UtcNow
+            };
+
+        await matchService.Save(match);
+
+        navigationManager.NavigateTo($"/GameBoard/{match.MatchId}");
+    }
+}
