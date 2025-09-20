@@ -1,71 +1,105 @@
-﻿@page "/"
+﻿@page "/Match-Index"
 @inject MatchService matchService
 @inject NavigationManager navigationManager
 @rendermode InteractiveServer
 
-<h3>MatchIndex</h3>
-<PageTitle>Match Index</PageTitle>
-<div class="container">
+<PageTitle>Match Registry</PageTitle>
+
+<div class="container mt-4">
     <div class="card shadow-lg">
-        <div class="card space-between">
-            <h5 class="card-title">Match Index</h5>
-            <a href="/Match-create" class="btn btn-primary mt-3">
-                <span class="bi bi-plus-square"></span> Create
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Match List</h5>
+            <a href="/Match-Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Create
             </a>
         </div>
 
         <div class="card-body">
-            <div class="row">
-                <div class="row align-items-center">
-                    <input class="form-control col" placeholder="Filter by Name" @bind="FilterValue" />
-                    <button class="btn btn-primary col-auto ms-2" @onclick="Search">Search</button>
+            <div class="row mb-3">
+                <div class="col-3">
+                    <label class="form-label"><strong>Filter by</strong></label>
+                    <InputSelect class="form-select" @bind-Value="Filter">
+                        <option value="" selected disabled>Select</option>
+                        <option value="MatchId">MatchId</option>
+                        <option value="MatchState">MatchState</option>
+                    </InputSelect>
                 </div>
-                <table class="table table-hover mt-3">
-                    <thead>
-                        <tr>
-                            <th>MatchId</th>
-                            <th>MatchState</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var match in Matches)
-                        {
-                            <tr>
-                                <td>@match.MatchId</td>
-                                <td>@match.MatchState</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-                <div class="card-footer space-between">
-                    <label>Count: @Matches.Count()</label>
+                <div class="col-6">
+                    <label class="form-label"><strong>Search</strong></label>
+                    <div class="input-group">
+                        <input class="form-control" @bind="FilterValue" placeholder="Search..." />
+                        <button type="button" class="btn btn-primary" @onclick="Search">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <table class="table table-bordered table-hover table-light">
+                <thead>
+                    <tr>
+                        <th>MatchId</th>
+                        <th>MatchState</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var match in Matches)
+                    {
+                        <tr>
+                            <td>@match.MatchId</td>
+                            <td>@match.MatchState</td>
+                            <td class="text-center">
+                                <a href="/Match-Edit/@match.MatchId" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => Delete(match.MatchId)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer">
+            <label>Total: @Matches.Count()</label>
         </div>
     </div>
 </div>
 
 @code {
     public List<Matches> Matches { get; set; } = new();
-
+    public string Filter { get; set; } = string.Empty;
     public string FilterValue { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        Matches = await matchService.GetList(p => p.MatchId > 0);
+        Matches = await matchService.GetList(m => m.MatchId > 0);
     }
 
     private async Task Search()
     {
         if (!string.IsNullOrWhiteSpace(FilterValue))
         {
-            Matches = await matchService.GetList(
-                p => p.MatchState.ToLower().Contains(FilterValue.ToLower())
-            );
+            if (Filter == "MatchId" && int.TryParse(FilterValue, out int id))
+                Matches = await matchService.GetList(m => m.MatchId == id);
+            else if (Filter == "MatchState")
+                Matches = await matchService.GetList(m => m.MatchState.ToLower().Contains(FilterValue.ToLower()));
         }
         else
         {
-            Matches = await matchService.GetList();
+            Matches = await matchService.GetList(m => m.MatchId > 0);
         }
+    }
+
+    private async Task Delete(int matchId)
+    {
+        await matchService.Delete(matchId);
+        Matches = await matchService.GetList(m => m.MatchId > 0);
     }
 }
