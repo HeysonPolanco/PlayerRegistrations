@@ -1,4 +1,193 @@
-﻿<h3>MatchEdit</h3>
-@code {
+﻿@page "/Match-Edit/{MatchId:int}"
+@using PlayerRegistrations.Models
+@using PlayerRegistrations.Services
 
+@inject MatchService matchService
+@inject PlayersService playersService
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Edit Match</PageTitle>
+
+@if (match == null)
+{
+    <p><em>Loading match data...</em></p>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="card shadow-lg">
+            <div class="card-header text-center bg-primary text-white border-bottom-0">
+                <h5 class="card-title">Edit Match</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="match" OnValidSubmit="UpdateMatch">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Match State</label>
+                        <InputSelect class="form-select" @bind-Value="match.MatchState">
+                            <option value="Started">Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Finished">Finished</option>
+                            <option value="Abandoned">Abandoned</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Player 1</label>
+                        <InputSelect class="form-select" @bind-Value="match.Player1Id">
+                            @foreach (var p in PlayersList)
+                            {
+                                <option value="@p.PlayerId">@p.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Player 2</label>
+                        <InputSelect class="form-select" @bind-Value="match.Player2Id">
+                            <option value="">Select</option>
+                            @foreach (var p in PlayersList)
+                            {
+                                <option value="@p.PlayerId">@p.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Winner</label>
+                        <InputSelect class="form-select" @bind-Value="match.WinnerId">
+                            <option value="">Select</option>
+                            @foreach (var p in PlayersList)
+                            {
+                                <option value="@p.PlayerId">@p.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-center mt-2">
+                        <div class="btn-group" role="group">
+                            <a href="/Matches-Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-box-arrow-left"></i> Back
+                            </a>
+                            <button type="submit" class="btn btn-outline-success">
+                                <i class="bi bi-pencil"></i> Save Changes
+                            </button>
+                            <button type="button" class="btn btn-danger" @onclick="() => ShowDeleteModal = true">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    @if (ShowDeleteModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div class="modal-header bg-danger text-white text-center">
+                        <h5 class="modal-title">Delete Match</h5>
+                        <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                    </div>
+                    <div class="modal-body text-danger">
+                        <p>Are you sure you want to delete this match?</p>
+                    </div>
+                    <div class="card-header">
+                        <h5 class="card-title text-center"><strong>Match Details</strong></h5>
+                    </div>
+                    <div class="mb-3 ms-3">
+                        <p><strong>Match Id:</strong> @match.MatchId</p>
+                        <p><strong>Player 1:</strong> @match.Player1?.Name</p>
+                        <p><strong>Player 2:</strong> @match.Player2?.Name</p>
+                        <p><strong>Created At:</strong> @match.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-secondary" @onclick="CloseDeleteModal">
+                                <i class="bi bi-box-arrow-left"></i> Back
+                            </button>
+                            <button class="btn btn-outline-danger" @onclick="DeleteMatch">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="text-center mt-2 text-danger">@Message</div>
+
+@code {
+    private Matches? match = new();
+    private List<Players> PlayersList = new();
+    private string? originalMatchState;
+    private bool ShowDeleteModal = false;
+    private string Message = string.Empty;
+
+    [Parameter] public int MatchId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        PlayersList = await playersService.GetList(p => p.PlayerId > 0);
+        var found = await matchService.Search(MatchId);
+        if (found != null)
+        {
+            match = found;
+            originalMatchState = match.MatchState;
+        }
+        else
+        {
+            Message = $"Match with ID {MatchId} not found.";
+            navigationManager.NavigateTo("/Match-Index");
+        }
+    }
+
+    private async Task UpdateMatch()
+    {
+        if (match.MatchState == "Finished" && originalMatchState != "Finished")
+        {
+            match.EndDate = DateTime.UtcNow;
+        }
+        else if (match.MatchState != "Finished" && originalMatchState == "Finished")
+        {
+            match.EndDate = null;
+            match.WinnerId = null;
+        }
+
+        var updated = await matchService.Save(match);
+        if (updated)
+        {
+            navigationManager.NavigateTo("/Match-Index");
+        }
+        else
+        {
+            Message = "Could not update match.";
+        }
+    }
+
+    private void CloseDeleteModal()
+    {
+        ShowDeleteModal = false;
+    }
+
+    private async Task DeleteMatch()
+    {
+        var deleted = await matchService.Delete(match.MatchId);
+        if (deleted)
+        {
+            navigationManager.NavigateTo("/Match-Index");
+        }
+        else
+        {
+            Message = "Could not delete match.";
+        }
+        ShowDeleteModal = false;
+    }
 }
