@@ -25,6 +25,13 @@ public class MatchService
         _dbFactory = dbFactory;
     }
 
+    public async Task <Matches?> Search(int MatchId)
+    {
+        await using var context = await _dbFactory.CreateDbContextAsync();
+        return await context.Matches
+            .FirstOrDefaultAsync(p => p.MatchId == MatchId);
+    }
+
     public async Task<bool> Save(Matches Match)
     {
         if (!await Exists(Match.MatchId))
