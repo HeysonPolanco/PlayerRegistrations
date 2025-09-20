@@ -8,9 +8,11 @@ public class Players
     public int PlayerId { get; set; }
 
     [Required(ErrorMessage = "First Name is required")]
-    public required string Name { get; set; }
-    public string Concept { get; set; } = null!;
-    public int? Wins { get; set; } = 0;
-    public int? Losses { get; set; } = 0;
-    public int? Draws { get; set; } = 0;
+    public string Name { get; set; } = null!;
+
+    [Range(1, int.MaxValue, ErrorMessage = "The number of matches has to greater than 1")]
+
+    public int Wins { get; set; }
+    public int Losses { get; set; }
+    public int draws { get; set; }
 }
