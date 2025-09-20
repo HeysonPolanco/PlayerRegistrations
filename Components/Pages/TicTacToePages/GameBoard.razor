@@ -1,0 +1,190 @@
+﻿@page "/GameBoard/{MatchId:int}"
+@using PlayerRegistrations.Models
+@using PlayerRegistrations.Services
+
+@inject MatchService MatchService
+@inject PlayersService playersService
+@inject MovementsServices MovementsServices
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+<div class="container mx-auto max-w-lg p-6 bg-white rounded-lg shadow-xl text-center">
+    ...
+</div>
+    <div class="game-container">
+        <div class="game-screen">
+            <h2 class="game-status">@GameStatus</h2>
+
+            <div class="game-board">
+                @for (var i = 0; i < 9; i++)
+                {
+                    var cellIndex = i;
+                    <button class="cell @GetPlayerClass(board[cellIndex])"
+                            @onclick="() => HandleCellClick(cellIndex)"
+                            disabled="@(board[cellIndex] != null || winner != null || isDraw)">
+                        @board[cellIndex]?.ToString()
+                    </button>
+                }
+            </div>
+
+            <button class="btn btn-secondary mt-4" @onclick="RestartGame">
+                Restart Game
+            </button>
+        </div>
+    </div>
+
+@code {
+    [Parameter]
+    public int MatchId { get; set; }
+
+    private Matches? Matches;
+    private string? player1Name;
+    private string? player2Name;
+
+    private enum PlayerType { X, O }
+    private PlayerType?[] board = new PlayerType?[9];
+    private PlayerType _currentPlayerType = PlayerType.X;
+    private PlayerType? winner;
+    private bool isDraw;
+
+    private string GameStatus
+    {
+        get
+        {
+            if (Matches == null) return "Loading...";
+            if (Matches.MatchState == "Pending") return "⌛ Waiting for Player O...";
+            if (winner != null) return $"🏆 Winner: {GetPlayerName(winner.Value)}!";
+            if (isDraw) return "🤝 It's a draw!";
+            return $"Turn: {GetPlayerName(_currentPlayerType)}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Matches = await MatchService.Search(MatchId);
+
+        if (Matches == null)
+        {
+            navigationManager.NavigateTo("GameBoard");
+            return;
+        }
+
+        var player1 = await playersService.Search(Matches.Player1Id);
+        player1Name = player1?.Name;
+
+        var player2 = Matches.Player2Id.HasValue
+        ? await playersService.Search(Matches.Player2Id.Value)
+		: null;
+
+        board = Matches.BoardState.Select(c =>
+            c == 'X' ? PlayerType.X : c == 'O' ? PlayerType.O : (PlayerType?)null
+        ).ToArray();
+
+        _currentPlayerType = PlayerType.X;
+    }
+
+    private async Task HandleCellClick(int index)
+    {
+        if (board[index] != null || winner != null || isDraw || Matches == null)
+            return;
+
+        board[index] = _currentPlayerType;
+
+        var move = new Movements
+        {
+                MatchId = Matches.MatchId,
+                PlayerId = _currentPlayerType == PlayerType.X ? Matches.Player1Id : Matches.Player2Id ?? Matches.Player1Id,
+            LinePosition = index / 3,
+            ColumnPosition = index % 3,
+            MovementDate = DateTime.UtcNow
+        };
+
+        await MovementsServices.Save(move);
+
+        Matches.BoardState = string.Concat(board.Select(c => c == null ? '-' : c == PlayerType.X ? 'X' : 'O'));
+
+        winner = CheckWinner();
+        if (winner != null)
+        {
+            await EndGame(winner.Value);
+            return;
+        }
+
+        isDraw = board.All(c => c != null);
+        if (isDraw)
+        {
+            await EndGame(null);
+            return;
+        }
+
+        // Change turn
+        if (Matches.Player2Id.HasValue)
+        {
+            _currentPlayerType = _currentPlayerType == PlayerType.X ? PlayerType.O : PlayerType.X;
+        }
+
+        await MatchService.Save(Matches);
+    }
+
+    private PlayerType? CheckWinner()
+    {
+        var winningLines = new[]
+        {
+            new[] {0,1,2}, new[] {3,4,5}, new[] {6,7,8},
+            new[] {0,3,6}, new[] {1,4,7}, new[] {2,5,8},
+            new[] {0,4,8}, new[] {2,4,6}
+        };
+
+        foreach (var line in winningLines)
+        {
+            if (board[line[0]].HasValue && board[line[0]] == board[line[1]] && board[line[0]] == board[line[2]])
+            {
+                return board[line[0]];
+            }
+        }
+
+        return null;
+    }
+
+    private async Task EndGame(PlayerType? winner)
+    {
+        if (Matches == null) return;
+
+        Matches.EndDate = DateTime.UtcNow;
+        Matches.MatchState = "Finished";
+
+        var player1 = await playersService.Search(Matches.Player1Id);
+        var player2 = Matches.Player2Id.HasValue ? await playersService.Search(Matches.Player2Id.Value) : null;
+
+        if (winner == PlayerType.X)
+        {
+            Matches.WinnerId = player1.PlayerId;
+            player1.Wins++;
+            if (player2 != null) player2.Losses++;
+        }
+        else if (winner == PlayerType.O && player2 != null)
+        {
+            Matches.WinnerId = player2.PlayerId;
+            player2.Wins++;
+            player1.Losses++;
+        }
+        else
+        {
+            player1.Draws++;
+            if (player2 != null) player2.Draws++;
+        }
+
+        await MatchService.Save(Matches);
+        await playersService.Save(player1);
+        if (player2 != null) await playersService.Save(player2);
+    }
+
+    private void RestartGame()
+    {
+        navigationManager.NavigateTo("/");
+    }
+
+    private string GetPlayerClass(PlayerType? player) => player == PlayerType.X ? "player-x" : player == PlayerType.O ? "player-o" : "";
+
+    private string GetPlayerName(PlayerType player) => player == PlayerType.X ? player1Name ?? "Player X" : player2Name ?? "Player O";
+}
