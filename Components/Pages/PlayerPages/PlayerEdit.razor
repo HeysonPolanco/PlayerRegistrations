@@ -1,5 +1,151 @@
-﻿<h3>PlayerEdit</h3>
+﻿@page "/Player-edit/{PlayerId:int}"
+@using PlayerRegistrations.Models
+@using PlayerRegistrations.Services
+
+@rendermode InteractiveServer
+@inject PlayersService playersService
+@inject NavigationManager navigationManager
+
+<PageTitle>Edit Player</PageTitle>
+
+@if (Player == null)
+{
+    <p><em>Loading player data...</em></p>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="card shadow-lg">
+            <div class="card-header text-center bg-primary text-white border-bottom-0">
+                <h5 class="card-title">Edit Player</h5>
+            </div>
+
+            <EditForm Model="Player" OnValidSubmit="Update" FormName="formEditPlayer">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Name</strong></label>
+                        <InputText class="form-control" @bind-Value="Player.Name" />
+                        <ValidationMessage For="() => Player.Name" />
+                    </div>
+                </div>
+
+                <div class="card-footer d-flex justify-content-center mt-2">
+                    <div class="btn-group" role="group">
+                        <a href="/Players/Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-box-arrow-left"></i> Back
+                        </a>
+                        <button type="submit" class="btn btn-outline-success">
+                            <i class="bi bi-pencil"></i> Update
+                        </button>
+                        <button type="button" class="btn btn-danger" @onclick="() => ShowDeleteModal = true">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    @if (ShowDeleteModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div class="modal-header bg-danger text-white text-center">
+                        <h5 class="modal-title">Delete Player</h5>
+                        <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                    </div>
+
+                    <div class="modal-body text-danger">
+                        <p>Are you sure you want to delete this player?</p>
+                    </div>
+
+                    <div class="card-header">
+                        <h5 class="card-title text-center"><strong>Player Information</strong></h5>
+                    </div>
+                    <div class="mb-3 ms-3">
+                        <p><strong>Player Id:</strong> @Player.PlayerId</p>
+                        <p><strong>Name:</strong> @Player.Name</p>
+                        <p><strong>Wins:</strong> @Player.Wins</p>
+                        <p><strong>Draws:</strong> @Player.Draws</p>
+                        <p><strong>Losses:</strong> @Player.Losses</p>
+                    </div>
+
+                    <div class="modal-footer d-flex justify-content-center">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-secondary" @onclick="CloseDeleteModal">
+                                <i class="bi bi-box-arrow-left"></i> Back
+                            </button>
+                            <button class="btn btn-outline-danger" @onclick="DeletePlayer">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="text-center mt-2 text-danger">@Message</div>
 
 @code {
+    [Parameter]
+    public int PlayerId { get; set; }
 
+    public Players? Player { get; set; }
+    public string Message { get; set; } = string.Empty;
+    private bool ShowDeleteModal { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Player = await playersService.Search(PlayerId);
+        if (Player == null)
+        {
+            Message = $"Player with ID {PlayerId} not found.";
+            navigationManager.NavigateTo("/Players-Index");
+        }
+    }
+
+    private async Task Update()
+    {
+        if (Player != null)
+        {
+            var updated = await playersService.Save(Player);
+
+            if (updated)
+            {
+                navigationManager.NavigateTo("/Player-Index");
+            }
+            else
+            {
+                Message = "Could not update the player.";
+            }
+        }
+    }
+
+    private void CloseDeleteModal()
+    {
+        ShowDeleteModal = false;
+    }
+
+    private async Task DeletePlayer()
+    {
+        if (Player != null)
+        {
+            var deleted = await playersService.Delete(Player.PlayerId);
+            if (deleted)
+            {
+                navigationManager.NavigateTo("/Player-Index");
+            }
+            else
+            {
+                Message = "Could not delete the player.";
+            }
+        }
+        ShowDeleteModal = false;
+    }
 }
