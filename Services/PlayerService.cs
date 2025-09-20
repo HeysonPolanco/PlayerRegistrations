@@ -31,6 +31,12 @@ public class PlayersService
         else
             return await Update(player);
     }
+    public async Task<Players?> Search(int playerId)
+    {
+        await using var context = await _dbFactory.CreateDbContextAsync();
+        return await context.Players
+            .FirstOrDefaultAsync(p => p.PlayerId == playerId);
+    }
 
     public async Task<bool> Exists(int playerId)
     {
@@ -40,7 +46,7 @@ public class PlayersService
 
     private async Task<bool> Insert(Players player)
     {
-        if (await NameExists(player.PlayerId, player.Concept))
+        if (await NameExists(player.PlayerId, player.Name))
             throw new Exception("A player with the same name already exists.");
 
         await using var context = await _dbFactory.CreateDbContextAsync();
@@ -50,7 +56,7 @@ public class PlayersService
 
     private async Task<bool> Update(Players player)
     {
-        if (await NameExists(player.PlayerId, player.Concept))
+        if (await NameExists(player.PlayerId, player.Name))
             throw new Exception("A player with the same name already exists.");
 
         await using var context = await _dbFactory.CreateDbContextAsync();
