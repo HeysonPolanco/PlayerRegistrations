@@ -1,68 +1,101 @@
 ﻿@page "/Player-Index"
-@rendermode InteractiveServer
+@using PlayerRegistrations.Models
+@using PlayerRegistrations.Services
+
 @inject PlayersService playersService
 @inject NavigationManager navigationManager
+@rendermode InteractiveServer
 
 <PageTitle>Player Registration</PageTitle>
-<div class="container">
+
+<div class="container mt-4">
     <div class="card shadow-lg">
-        <div class="card space-between">
-            <h5 class="card-title">Player Registration</h5>
-            <a href="/Create" class="btn btn-primary mt-3">
-                <span class="bi bi-plus-square"></span> Create
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Players List</h5>
+            <a href="/Player-Create" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Create
             </a>
         </div>
 
         <div class="card-body">
-            <div class="row">
-                <div class="row align-items-center">
-                    <input class="form-control col" placeholder="Filter by Name" @bind="FilterValue" />
-                    <button class="btn btn-primary col-auto ms-2" @onclick="Search">Search</button>
+            <div class="row mb-3">
+                <div class="col-3">
+                    <label class="form-label"><strong>Filter by</strong></label>
+                    <InputSelect class="form-select" @bind-Value="Filter">
+                        <option value="" selected disabled>Select</option>
+                        <option value="PlayerId">PlayerId</option>
+                        <option value="Name">Name</option>
+                    </InputSelect>
                 </div>
-                <table class="table table-hover mt-3">
-                    <thead>
-                        <tr>
-                            <th>PlayerId</th>
-                            <th>Name</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var player in players)
-                        {
-                            <tr>
-                                <td>@player.PlayerId</td>
-                                <td>@player.Concept</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-                <div class="card-footer space-between">
-                    <label>Count: @players.Count()</label>
+                <div class="col-6">
+                    <label class="form-label"><strong>Search</strong></label>
+                    <div class="input-group">
+                        <input class="form-control" @bind="FilterValue" placeholder="Search..." />
+                        <button type="button" class="btn btn-primary" @onclick="Search">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <table class="table table-bordered table-hover table-light">
+                <thead>
+                    <tr>
+                        <th>PlayerId</th>
+                        <th>Name</th>
+                        <th>Wins</th>
+                        <th>Draws</th>
+                        <th>Losses</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in PlayersList)
+                    {
+                        <tr>
+                            <td>@player.PlayerId</td>
+                            <td>@player.Name</td>
+                            <td>@player.Wins</td>
+                            <td>@player.Draws</td>
+                            <td>@player.Losses</td>
+                            <td class="text-center">
+                                <a href="/Player-edit/@player.PlayerId" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <label>Total: @PlayersList.Count()</label>
         </div>
     </div>
 </div>
 
 @code {
-    public List<Players> players { get; set; } = new List<Players>();
-
+    public List<Players> PlayersList { get; set; } = new();
+    public string Filter { get; set; } = string.Empty;
     public string FilterValue { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        players = await playersService.GetList(p => p.PlayerId > 0);
+        PlayersList = await playersService.GetList(p => p.PlayerId > 0);
     }
 
     private async Task Search()
     {
         if (!string.IsNullOrWhiteSpace(FilterValue))
         {
-            players = await playersService.GetList(p => p.Concept.ToLower().Contains(FilterValue.ToLower()));
+            if (Filter == "PlayerId" && int.TryParse(FilterValue, out int id))
+                PlayersList = await playersService.GetList(p => p.PlayerId == id);
+            else if (Filter == "Name")
+                PlayersList = await playersService.GetList(p => p.Name.ToLower().Contains(FilterValue.ToLower()));
         }
         else
         {
-            players = await playersService.GetList();
+            PlayersList = await playersService.GetList(p => p.PlayerId > 0);
         }
     }
 }
