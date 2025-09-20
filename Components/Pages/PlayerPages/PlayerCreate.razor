@@ -1,9 +1,9 @@
-﻿@page "/Create"
+﻿@page "/Player-Create"
 @inject PlayersService playersService
 @inject NavigationManager navigationManager
 @rendermode InteractiveServer
 
-<PageTitle>Player Registration</PageTitle>
+<PageTitle>Create Your Player</PageTitle>
 
 <EditForm Model="player" OnValidSubmit="Save">
     <DataAnnotationsValidator />
@@ -25,6 +25,11 @@
                 @*Concept (Name)*@
                 <div class="mb-3">
                     <label class="form-label">Name</label>
+                    <InputText class="form-control wide-input" @bind-Value="player.Name" />
+                    <ValidationMessage For="@(() => player.Name)" />
+                </div>
+                <div class="mb-3">
+                    <label concept="form-label">concept</label>
                     <InputText class="form-control wide-input" @bind-Value="player.Concept" />
                     <ValidationMessage For="@(() => player.Concept)" />
                 </div>
@@ -38,7 +43,7 @@
                 <button type="submit" class="btn btn-outline-success">
                     <span class="bi bi-check-circle-fill"></span> Save
                 </button>
-                <a href="/players" class="btn btn-outline-danger">
+                <a href="/Player-Index" class="btn btn-outline-danger">
                     <span class="bi bi-arrow-bar-left"></span> Back
                 </a>
             </div>
@@ -51,26 +56,26 @@
 </EditForm>
 
 @code {
-    private Players player { get; set; } = new Players();
+    public Players player { get; set; } = new Players { Name = "" };
     private string savedMessage { get; set; } = string.Empty;
     private string errorMessage { get; set; } = string.Empty;
 
     private void New()
     {
-        player = new Players();
+        player = new Players { Name = "" };
         errorMessage = string.Empty;
         savedMessage = string.Empty;
     }
 
-    private async Task Save()
+    public async Task Save()
     {
-        if (string.IsNullOrWhiteSpace(player.Concept))
+        if (string.IsNullOrWhiteSpace(player.Name))
         {
             errorMessage = "Name is required";
             return;
         }
 
-        var saved = await playersService.Save(this.player);
+        var saved = await playersService.Save(player);
         if (saved)
         {
             savedMessage = "Player successfully created";
@@ -80,5 +85,14 @@
         {
             errorMessage = "Error saving the player";
         }
+        try
+        {
+            var save = await playersService.Save(player);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+
     }
 }
