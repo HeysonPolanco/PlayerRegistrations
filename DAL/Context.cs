@@ -1,38 +1,14 @@
-﻿using PlayerRegistrations.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using PlayerRegistrations.Models;
 
-namespace PlayerRegistrations.DAL;
-public class Context : DbContext
+namespace PlayerRegistrations.DAL
 {
-    public Context(DbContextOptions<Context> options) : base(options) { }
-    public DbSet <Movements> Movements { get; set; }
-    public DbSet<Players> Players { get; set; }
-    public DbSet<Matches> Matches { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public class Context : DbContext
     {
-        modelBuilder.Entity<Matches>(entity =>
-        {
-            entity.HasOne(p => p.Player1)
-                  .WithMany()
-                  .HasForeignKey(p => p.Player1Id)
-                  .OnDelete(DeleteBehavior.Restrict);
+        public Context(DbContextOptions<Context> options) : base(options) { }
 
-            entity.HasOne(p => p.Player2)
-                  .WithMany()
-                  .HasForeignKey(p => p.Player2Id)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(p => p.Winner)
-                  .WithMany()
-                  .HasForeignKey(p => p.WinnerId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(p => p.PlayerTurn)
-                  .WithMany()
-                  .HasForeignKey(p => p.PlayerTurnId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-        });
+        public DbSet<Players> Players { get; set; }
+        public DbSet<Matches> Matches { get; set; }
+        public DbSet<Movements> Movements { get; set; }
     }
 }
