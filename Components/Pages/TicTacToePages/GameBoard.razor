@@ -3,14 +3,12 @@
 @using PlayerRegistrations.Services
 
 @inject MatchService MatchService
-@inject PlayersService playersService
 @inject MovementsServices MovementsServices
+@inject PlayersService playersService
 @inject NavigationManager navigationManager
 @rendermode InteractiveServer
 
 <div class="container mx-auto max-w-lg p-6 bg-white rounded-lg shadow-xl text-center">
-    ...
-</div>
     <div class="game-container">
         <div class="game-screen">
             <h2 class="game-status">@GameStatus</h2>
@@ -32,6 +30,7 @@
             </button>
         </div>
     </div>
+</div>
 
 @code {
     [Parameter]
@@ -61,7 +60,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Matches = await MatchService.Search(MatchId);
+        Matches = await MatchService.GetById(MatchId);
 
         if (Matches == null)
         {
@@ -69,14 +68,16 @@
             return;
         }
 
-        var player1 = await playersService.Search(Matches.Player1Id);
+        var player1 = await playersService.Search(Matches.Player1Id ?? 0);
         player1Name = player1?.Name;
 
         var player2 = Matches.Player2Id.HasValue
-        ? await playersService.Search(Matches.Player2Id.Value)
-		: null;
+            ? await playersService.Search(Matches.Player2Id.Value)
+            : null;
 
-        board = Matches.BoardState.Select(c =>
+        player2Name = player2?.Name;
+
+        board = Matches.MatchState.Select(c =>
             c == 'X' ? PlayerType.X : c == 'O' ? PlayerType.O : (PlayerType?)null
         ).ToArray();
 
@@ -92,16 +93,19 @@
 
         var move = new Movements
         {
-                MatchId = Matches.MatchId,
-                PlayerId = _currentPlayerType == PlayerType.X ? Matches.Player1Id : Matches.Player2Id ?? Matches.Player1Id,
+            MatchId = Matches.MatchId,
+            PlayerId = _currentPlayerType == PlayerType.X
+            ? Matches.Player1Id ?? 0 
+            : Matches.Player2Id ?? Matches.Player1Id ?? 0,
             LinePosition = index / 3,
-            ColumnPosition = index % 3,
-            MovementDate = DateTime.UtcNow
+            columnPosition = index % 3,
+            MovementTime = DateTime.UtcNow
         };
 
         await MovementsServices.Save(move);
 
-        Matches.BoardState = string.Concat(board.Select(c => c == null ? '-' : c == PlayerType.X ? 'X' : 'O'));
+        Matches.MatchState = string.Concat(board.Select(c =>
+            c == null ? '-' : c == PlayerType.X ? 'X' : 'O'));
 
         winner = CheckWinner();
         if (winner != null)
@@ -137,7 +141,9 @@
 
         foreach (var line in winningLines)
         {
-            if (board[line[0]].HasValue && board[line[0]] == board[line[1]] && board[line[0]] == board[line[2]])
+            if (board[line[0]].HasValue &&
+                board[line[0]] == board[line[1]] &&
+                board[line[0]] == board[line[2]])
             {
                 return board[line[0]];
             }
@@ -153,8 +159,10 @@
         Matches.EndDate = DateTime.UtcNow;
         Matches.MatchState = "Finished";
 
-        var player1 = await playersService.Search(Matches.Player1Id);
-        var player2 = Matches.Player2Id.HasValue ? await playersService.Search(Matches.Player2Id.Value) : null;
+        var player1 = await playersService.Search(Matches.Player1Id ?? 0);
+        var player2 = Matches.Player2Id.HasValue
+            ? await playersService.Search(Matches.Player2Id.Value)
+            : null;
 
         if (winner == PlayerType.X)
         {
@@ -184,7 +192,11 @@
         navigationManager.NavigateTo("/");
     }
 
-    private string GetPlayerClass(PlayerType? player) => player == PlayerType.X ? "player-x" : player == PlayerType.O ? "player-o" : "";
+    private string GetPlayerClass(PlayerType? player) =>
+        player == PlayerType.X ? "player-x" :
+        player == PlayerType.O ? "player-o" : "";
 
-    private string GetPlayerName(PlayerType player) => player == PlayerType.X ? player1Name ?? "Player X" : player2Name ?? "Player O";
+    private string GetPlayerName(PlayerType player) =>
+        player == PlayerType.X ? player1Name ?? "Player X" :
+        player2Name ?? "Player O";
 }
