@@ -136,7 +136,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         PlayersList = await playersService.GetList(p => p.PlayerId > 0);
-        var found = await matchService.Search(MatchId);
+        var found = await matchService.GetById(MatchId);
         if (found != null)
         {
             match = found;
@@ -148,6 +148,7 @@ else
             navigationManager.NavigateTo("/Match-Index");
         }
     }
+
 
     private async Task UpdateMatch()
     {
