@@ -1,22 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PlayerRegistrations.DAL;
+﻿using System.Net.Http;
+using System.Net.Http.Json;
 using PlayerRegistrations.Models;
 
 namespace PlayerRegistrations.Services;
 
 public class MovementsServices
 {
-    private readonly IDbContextFactory<Context> _dbFactory;
+    private readonly HttpClient _http;
 
-    public MovementsServices(IDbContextFactory<Context> dbFactory)
+    public MovementsServices(HttpClient http)
     {
-        _dbFactory = dbFactory;
+        _http = http;
     }
 
     public async Task<bool> Save(Movements movement)
     {
-        await using var context = await _dbFactory.CreateDbContextAsync();
-        context.Movements.Add(movement);
-        return await context.SaveChangesAsync() > 0;
+        var response = await _http.PostAsJsonAsync("api/Movements", movement);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<List<Movements>> GetByMatchIdAsync(int partidaId)
+    {
+        return await _http.GetFromJsonAsync<List<Movements>>($"api/Movements/{partidaId}")
+               ?? new List<Movements>();
     }
 }
