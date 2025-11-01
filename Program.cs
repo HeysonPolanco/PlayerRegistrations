@@ -1,4 +1,4 @@
-using PlayerRegistrations.Components;
+﻿using PlayerRegistrations.Components;
 using Microsoft.EntityFrameworkCore;
 using PlayerRegistrations.DAL;
 using PlayerRegistrations.Services;
@@ -14,7 +14,12 @@ builder.Services.AddDbContextFactory<Context>(o => o.UseSqlServer(ConStr));
 
 builder.Services.AddScoped<PlayersService>();
 builder.Services.AddScoped<MatchService>();
-builder.Services.AddScoped<MovementsServices>();
+
+// ✅ Register HttpClient for MovementsServices
+builder.Services.AddHttpClient<MovementsServices>(client =>
+{
+    client.BaseAddress = new Uri("https://gestionhuacalesapi.azurewebsites.net/swagger/index.html"); // replace with your API base URL
+});
 
 var app = builder.Build();
 
@@ -25,8 +30,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
